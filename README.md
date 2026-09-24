@@ -10,11 +10,11 @@ An ESPHome component for recording clips from an ESPHome ESP32-S3 camera to a mi
 ## Features
 
 - Native ESPHome component for easy updates, management, and automation
-- Recordings are saved to MJPEG AVI files under `recordings/YYYY/MM/DD/` on the SD card
+- Recordings are saved as MJPEG AVI files under `recordings/YYYY/MM/DD/` on the SD card
 - Full Web UI at `http://<device-address>/recordings` to browse, play, download, or delete clips. The page and downloads use the configured Basic HTTP username and password
 - Adjustable motion detection built in, as well as optional on-device person detection and classification
 - `start` action to start recording immediately
-- `stop_and_classify` action - finalizes the AVI, checks up to four frames for people, and labels it `_PERSON`, `_MOTION`, or `_UNCLASSIFIED`
+- `stop_and_classify` action finalizes the AVI, checks up to four frames for people, and labels it `_PERSON`, `_MOTION`, or `_UNCLASSIFIED`
 - Plain `stop` action saves the AVI without classification
 - Controls and tuning options exposed directly to Home Assistant
 - Two **Record** switches decide whether successfully classified person and other-motion clips are kept
