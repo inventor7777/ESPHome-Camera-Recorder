@@ -2,10 +2,10 @@
 
 An ESPHome component for recording clips from an ESPHome ESP32-S3 camera to a microSD card. It can detect motion, save AVI clips to an SD card, and is configurable via YAML + Home Assistant, as well as using native ESPHome actions for customizable automations and plugins.
 
-# Requirements
-- ESP32-S3 with **at least 4MB PSRAM and 8MB flash** *You can get by on 4MB flash if you disable ESPHome OTA and possibly set a custom partition table.*
+## Requirements
+- ESP32-S3 with **at least 4MB PSRAM and 8MB flash**. *You can get by on 4MB flash if you disable ESPHome OTA and possibly set a custom partition table.*
 - [Supported camera](https://esphome.io/components/esp32_camera/)
-- microSD card formatted in FAT *(MBR)*
+- microSD card formatted in FAT32 *(MBR)*
 
 ## Features
 
@@ -149,7 +149,7 @@ Make sure to add `camera_recorder_web_username`, and `camera_recorder_web_passwo
 
 Number and switch values are restored after reboot. `mounted` and `recording` sensors are optional; the other listed controls and status entities are created by default. Without valid time, recordings go into `recordings/unsynced/`.
 
-## Espressif Person Detection
+### Espressif Person Detection
 
 Before the first boot, mount the microSD card on your computer and run:
 
