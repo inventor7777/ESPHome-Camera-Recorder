@@ -21,7 +21,7 @@ assert classification_frames(1) == [0]
 assert classification_frames(4) == [0, 1, 2, 3]
 assert classification_frames(100) == [0, 25, 50, 75]
 
-source = Path(__file__).with_name("camera_recorder.cpp").read_text()
+source = (Path(__file__).parent / "components/camera_recorder/camera_recorder.cpp").read_text()
 assert "this->motion_result_score_ >= this->motion_threshold_" in source
 start = source.index("static uint8_t classification_divisor")
 body = " ".join(source[start : source.index("\n}", start)].split())

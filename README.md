@@ -1,66 +1,53 @@
-# Camera recorder
+# ESPHome Camera Recorder
 
-An ESPHome component for recording an ESP32-S3 camera to a microSD card. Motion detection runs on camera frames; recordings can then be classified for people using a model stored on the card.
+An ESPHome component for recording clips from an ESPHome ESP32-S3 camera to a microSD card. It can detect motion, save AVI clips to an SD card, and is configurable via YAML + Home Assistant, as well as using native ESPHome actions for customizable automations and plugins.
 
-## How it works
+# Requirements
+- ESP32-S3 with **at least 4MB PSRAM and 8MB flash** *You can get by on 4MB flash if you disable ESPHome OTA and possibly set a custom partition table.*
+- [Supported camera](https://esphome.io/components/esp32_camera/)
+- microSD card formatted in FAT *(MBR)*
 
-The component samples camera frames for motion and publishes a **Motion Score**: the percentage of pixels that changed enough since the previous frame or a frame four samples earlier. When the score reaches **Motion Threshold**, the **Motion** binary sensor turns on; it turns off after **Motion Hold Time** without another qualifying frame. Motion detection alone does **not** start recording. Connect the sensor to the recording actions as shown below.
+## Features
 
-Recordings are MJPEG AVI files under `recordings/YYYY/MM/DD/` on the card. `stop_and_classify` finalizes the AVI, checks up to four frames for people, and labels it `_PERSON`, `_MOTION`, or `_UNCLASSIFIED`. The two **Record** switches decide whether successfully classified person and other-motion clips are kept. Classification failures are kept as `_UNCLASSIFIED`. Plain `stop` saves the AVI without classification. A temporary `.avi.idx` file supports AVI finalization; it is removed after a successful finish and retained if finalization fails.
+- Native ESPHome component for easy updates, management, and automation
+- Recordings are saved to MJPEG AVI files under `recordings/YYYY/MM/DD/` on the SD card
+- Full Web UI at `http://<device-address>/recordings` to browse, play, download, or delete clips. The page and downloads use the configured Basic HTTP username and password
+- Adjustable motion detection built in, as well as optional on-device person detection and classification
+- `start` action to start recording immediately
+- `stop_and_classify` action - finalizes the AVI, checks up to four frames for people, and labels it `_PERSON`, `_MOTION`, or `_UNCLASSIFIED`
+- Plain `stop` action saves the AVI without classification
+- Controls and tuning options exposed directly to Home Assistant
+- Two **Record** switches decide whether successfully classified person and other-motion clips are kept
+- Sensors showing recording, classification, SD card, and model status
 
-Open `http://<device-address>/recordings` to browse, play, download, or delete clips. The page and downloads use the configured HTTP username and password.
+![screenshot](screenshot.png)
 
-## Complete example
-
-This example uses the pinout from this repository's ESP32-S3 camera configuration. Change the camera, SD, I²C, and PSRAM settings for your board. Save the YAML at the repository root so the local component path resolves.
+## Installation and Configuration
+The easiest way to get started is to either create a [new reusable package containing the below YAML](https://esphome.io/components/packages/), or just paste it into an existing ESP32-S3 configuration. I set the camera pins to what mine uses; other examples can be found [on ESPHome's website.](https://esphome.io/components/esp32_camera/#configuration-examples)
 
 ```yaml
-esphome:
-  name: camera-recorder
-  min_version: 2026.9.0
-
-esp32:
-  variant: ESP32S3
-  flash_size: 16MB
-  framework:
-    type: esp-idf
-
-psram:
-  mode: octal
-  speed: 80MHz
-
-wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
-
-api:
-logger:
-
 external_components:
-  - source:
-      type: local
-      path: Components
+  - source: github://inventor7777/ESPHome-Camera-Recorder
     components: [camera_recorder]
 
 i2c:
-  id: camera_i2c
-  sda: GPIO4
-  scl: GPIO5
+  - id: camera_i2c
+    sda: GPIO4
+    scl: GPIO5
 
 time:
-  - platform: sntp
-    id: camera_time
+  - platform: homeassistant
+    id: homeassistant_time
 
 esp32_camera:
   id: main_camera
-  internal: true
   resolution: 640x480
   jpeg_quality: 15
-  max_framerate: 5 fps
-  idle_framerate: 0 fps
+  max_framerate: 10 fps
+  idle_framerate: 0.1 fps
   external_clock:
     pin: GPIO15
-    frequency: 20MHz
+    frequency: 8MHz # 8MHz works great with the OV2640 and OV3660, but this should be raised to 20MHz for the OV56xx series.
   i2c_id: camera_i2c
   data_pins: [GPIO11, GPIO9, GPIO8, GPIO10, GPIO12, GPIO18, GPIO17, GPIO16]
   vsync_pin: GPIO6
@@ -70,7 +57,7 @@ esp32_camera:
 camera_recorder:
   id: recorder
   camera_id: main_camera
-  time_id: camera_time
+  time_id: homeassistant_time
   clk_pin: GPIO39
   cmd_pin: GPIO38
   data0_pin: GPIO40
@@ -142,9 +129,9 @@ button:
           days: 1
 ```
 
-Add `wifi_ssid`, `wifi_password`, `camera_recorder_web_username`, and `camera_recorder_web_password` to `secrets.yaml`.
+Make sure to add `camera_recorder_web_username`, and `camera_recorder_web_password` to `secrets.yaml`. You can also specify them directly in YAML if you wish.
 
-## Defaults and controls
+## Defaults and Descriptions
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
@@ -157,17 +144,21 @@ Add `wifi_ssid`, `wifi_password`, `camera_recorder_web_username`, and `camera_re
 | Motion Detection FPS | `0.8` | Motion samples per second; adjustable from 0.1 to 2.0. |
 | Minimum Person Detections | `2` | Positive samples required among up to four AVI frames; adjustable from 1 to 4. |
 | Record People / Record Other Motion | On / On | Keep clips after successful classification. |
-| Auto Deletion | On | After a recording, delete the oldest complete recording days when card free space is below 10%; today's clips are retained. |
+| Auto Deletion | On | After a recording, delete the oldest complete recording days when card free space is below 10%; today's clips are always retained. |
 | Motion Detection | On | When off, stops motion frame processing, clears Motion, and sets Motion Score to 0%. |
 
 Number and switch values are restored after reboot. `mounted` and `recording` sensors are optional; the other listed controls and status entities are created by default. Without valid time, recordings go into `recordings/unsynced/`.
 
-## Person model
+## Espressif Person Detection
 
-Before first boot, mount the microSD card on your computer and run:
+Before the first boot, mount the microSD card on your computer and run:
 
 ```sh
-Components/camera_recorder/download_models.sh /path/to/sd-card
+./download_models.sh /path/to/sd-card-root
 ```
 
 Pass the **card root**, not its `models` directory. The script downloads and verifies `models/s3/pedestrian_detect_pico_s8_v1.espdl`. **Person Model Ready** indicates whether it loaded. Motion detection and recording can still run without the model, but person classification cannot.
+
+### Notes and Limitations
+- The ESP32-S3 is very capable, but this pushes it pretty far, especially with ESPHome overhead. Don't expect more than 5-10 Mbps download speeds, more than 15 FPS from the camera, or insanely accurate classifications. You can save significant idle resources by disabling the native motion detection and using an mmWave or PIR motion sensor in ESPHome or through Home Assistant.
+- Component code was written by GPT-6 Sol, but I stayed fully in the loop and I tested this *exhaustively* on real hardware before releasing.

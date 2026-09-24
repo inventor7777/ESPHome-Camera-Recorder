@@ -40,7 +40,7 @@ from esphome.const import (
 from esphome.core import CORE
 
 CODEOWNERS = []
-DEPENDENCIES = ["esp32_camera", "time"]
+DEPENDENCIES = ["esp32_camera", "time", "psram"]
 AUTO_LOAD = ["binary_sensor", "number", "sensor", "switch", "web_server_base"]
 
 CONF_CAMERA_ID = "camera_id"
