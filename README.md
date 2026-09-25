@@ -131,6 +131,9 @@ button:
 
 Make sure to add `camera_recorder_web_username`, and `camera_recorder_web_password` to `secrets.yaml`. You can also specify them directly in YAML if you wish.
 
+
+![entities](entities.png)
+
 ## Defaults and Descriptions
 
 | Setting | Default | Meaning |
