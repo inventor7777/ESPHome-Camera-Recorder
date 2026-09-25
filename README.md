@@ -23,28 +23,28 @@ An ESPHome component for recording clips from an ESPHome ESP32-S3 camera to a mi
 ![screenshot](screenshot.png)
 
 ## Installation and Configuration
-The easiest way to get started is to either create a [new reusable package containing the below YAML](https://esphome.io/components/packages/), or just paste it into an existing ESP32-S3 configuration. I set the camera pins to what mine uses; other examples can be found [on ESPHome's website.](https://esphome.io/components/esp32_camera/#configuration-examples)
+The easiest way to get started is to either create a [new reusable package containing the below YAML](https://esphome.io/components/packages/), or just paste it into an existing ESP32-S3 camera configuration. I set the camera and SD card pins to what [my board uses](https://www.aliexpress.us/item/3256808099197404.html); other board pinout examples can be found [on ESPHome's website.](https://esphome.io/components/esp32_camera/#configuration-examples)
 
 ```yaml
 external_components:
   - source: github://inventor7777/ESPHome-Camera-Recorder
     components: [camera_recorder]
 
-i2c:
+i2c: # This is for the camera, SD pins are defined under the component
   - id: camera_i2c
     sda: GPIO4
     scl: GPIO5
 
-time:
+time: # This can be any ESPHome time source. I prefer SNTP time, but this is simpler to set up
   - platform: homeassistant
     id: homeassistant_time
 
 esp32_camera:
   id: main_camera
-  resolution: 640x480
+  resolution: 640x480 # This is just a default, if your camera supports it, you can set it higher at the cost of some recording performance
   jpeg_quality: 15
   max_framerate: 10 fps
-  idle_framerate: 0.1 fps
+  idle_framerate: 0.1 fps # Rate at which it sends frames to the HA camera entity for faster previewing. Can be set to 0 if you don't use the HA camera entity often.
   external_clock:
     pin: GPIO15
     frequency: 8MHz # 8MHz works great with the OV2640 and OV3660, but this should be raised to 20MHz for the OV56xx series.
@@ -58,9 +58,11 @@ camera_recorder:
   id: recorder
   camera_id: main_camera
   time_id: homeassistant_time
+# SD card pins
   clk_pin: GPIO39
   cmd_pin: GPIO38
   data0_pin: GPIO40
+# You can place the passwords directly in plain text here, but a secret is better in the long run if you have multiple cameras
   web_username: !secret camera_recorder_web_username
   web_password: !secret camera_recorder_web_password
 
@@ -79,10 +81,11 @@ camera_recorder:
     name: Classifying
   models_ready:
     name: Person Model Ready
-  person_detected:
+  person_detected: # Currently, this is on when the last motion had a person, and does not turn off automatically
     name: Person Detected
   motion:
     name: Motion
+# You can remove these automations and let something else trigger recording, if you wish
     on_press:
       - camera_recorder.start: recorder
     on_release:
@@ -105,7 +108,7 @@ camera_recorder:
     name: Record Other Motion
   auto_deletion:
     name: Auto Deletion
-  motion_detection:
+  motion_detection: # Turning this off fully disables motion frame processing
     name: Motion Detection
 
 button:
