@@ -44,10 +44,10 @@ esp32_camera:
   resolution: 640x480 # This is just a default, if your camera supports it, you can set it higher at the cost of some recording performance
   jpeg_quality: 15
   max_framerate: 10 fps
-  idle_framerate: 0.1 fps # Rate at which it sends frames to the HA camera entity for faster previewing. Can be set to 0 if you don't use the HA camera entity often.
+  idle_framerate: 0.1 fps # Rate at which it sends frames to the HA camera entity for faster previewing. Can be set to 0 if you don't use the HA camera entity often
   external_clock:
     pin: GPIO15
-    frequency: 8MHz # 8MHz works great with the OV2640 and OV3660, but this should be raised to 20MHz for the OV56xx series.
+    frequency: 8MHz # 8MHz works great with the OV2640 and OV3660, but this should be raised to 20MHz for the OV56xx series
   i2c_id: camera_i2c
   data_pins: [GPIO11, GPIO9, GPIO8, GPIO10, GPIO12, GPIO18, GPIO17, GPIO16]
   vsync_pin: GPIO6
@@ -81,7 +81,7 @@ camera_recorder:
     name: Classifying
   models_ready:
     name: Person Model Ready
-  person_detected: # Currently, this is on when the last motion had a person, and does not turn off automatically
+  person_detected: # Currently, this turns on when the last motion had a person, and does not turn off automatically
     name: Person Detected
   motion:
     name: Motion
@@ -102,9 +102,9 @@ camera_recorder:
     name: Motion Detection FPS
   min_person_detections:
     name: Minimum Person Detections
-  record_people:
+  record_people: # If this is off, it will discard _PERSON detections after it classifies
     name: Record People
-  record_other_motion:
+  record_other_motion: # If this is off, it will discard _MOTION detections after it classifies
     name: Record Other Motion
   auto_deletion:
     name: Auto Deletion
@@ -148,10 +148,10 @@ Make sure to add `camera_recorder_web_username`, and `camera_recorder_web_passwo
 | Motion Threshold | `18%` | Minimum Motion Score to trigger Motion; adjustable from 0.1% to 100%. |
 | Motion Hold Time | `10 s` | Time before Motion clears; adjustable from 1 to 300 seconds. |
 | Motion Detection FPS | `0.8` | Motion samples per second; adjustable from 0.1 to 2.0. |
-| Minimum Person Detections | `2` | Positive samples required among up to four AVI frames; adjustable from 1 to 4. |
-| Record People / Record Other Motion | On / On | Keep clips after successful classification. |
-| Auto Deletion | On | After a recording, delete the oldest complete recording days when card free space is below 10%; today's clips are always retained. |
-| Motion Detection | On | When off, stops motion frame processing, clears Motion, and sets Motion Score to 0%. |
+| Minimum Person Detections | `2` | The ESP analyzes 4 frames after saving the video, this controls how many need to be classified as PERSON in order to tag as such; adjustable from 1 to 4. |
+| Record People / Record Other Motion | On / On | Keep clips classified as such after successful classification. |
+| Auto Deletion | On | After a recording, delete the oldest complete recording days when card free space is below 10%; today's clips and unsynced clips are always retained. |
+| Motion Detection | On | When off, fully stops motion frame processing, clears Motion, and sets Motion Score to 0%. |
 
 Number and switch values are restored after reboot. `mounted` and `recording` sensors are optional; the other listed controls and status entities are created by default. Without valid time, recordings go into `recordings/unsynced/`.
 
@@ -166,5 +166,6 @@ Before the first boot, mount the microSD card on your computer and run:
 Pass the **card root**, not its `models` directory. The script downloads and verifies `models/s3/pedestrian_detect_pico_s8_v1.espdl`. **Person Model Ready** indicates whether it loaded. Motion detection and recording can still run without the model, but person classification cannot.
 
 ### Notes and Limitations
-- The ESP32-S3 is very capable, but this pushes it pretty far, especially with ESPHome overhead. Don't expect more than 5-10 Mbps download speeds, more than 15 FPS from the camera, or insanely accurate classifications. You can save significant idle resources by disabling the native motion detection and using an mmWave or PIR motion sensor in ESPHome or through Home Assistant.
-- Component code was written by GPT-6 Sol, but I stayed fully in the loop and I tested this *exhaustively* on real hardware before releasing.
+- The ESP32-S3 is very capable, but this pushes it pretty far, especially with ESPHome overhead. Don't expect more than 5-10 Mbps download speeds, more than 15 FPS from the camera, or insanely accurate classifications.
+- You can save significant idle resources by disabling the native motion detection and using an mmWave or PIR motion sensor in ESPHome, or another sensor through Home Assistant.
+- Component code was written by GPT-6 Sol, but I defined the purpose from the ground up and I tested this *exhaustively* on real hardware before releasing.
